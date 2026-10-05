@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,32 +10,12 @@ import {
   Alert 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const CHAVE_ULTIMA_DOACAO = '@instituto_mao_amiga:ultima_doacao';
+import { salvarDoacao } from '../services/doacoesStorage';
 
 export default function CadastroDoacaoScreen({ navigation }) {
   const [tipoItem, setTipoItem] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [destino, setDestino] = useState('');
-
-  useEffect(() => {
-    carregarDoacaoSalva();
-  }, []);
-
-  const carregarDoacaoSalva = async () => {
-    try {
-      const dadosSalvos = await AsyncStorage.getItem(CHAVE_ULTIMA_DOACAO);
-      if (dadosSalvos !== null) {
-        const doacao = JSON.parse(dadosSalvos);
-        setTipoItem(doacao.tipoItem || '');
-        setQuantidade(doacao.quantidade || '');
-        setDestino(doacao.destino || '');
-      }
-    } catch (error) {
-      console.log('Erro ao carregar a doação salva:', error);
-    }
-  };
 
   const handleCadastrar = async () => {
     const regexNumerico = /^[0-9]+$/;
@@ -44,11 +24,14 @@ export default function CadastroDoacaoScreen({ navigation }) {
       return;
     }
 
-    const novaDoacao = { tipoItem, quantidade, destino };
-
     try {
-      await AsyncStorage.setItem(CHAVE_ULTIMA_DOACAO, JSON.stringify(novaDoacao));
-      Alert.alert('Sucesso', 'Doação registada e salva com sucesso!');
+      await salvarDoacao({
+        tipoItem,
+        quantidade,
+        pontoDestino: destino,
+      });
+
+      Alert.alert('Sucesso', 'Doação registada no histórico com sucesso!');
       navigation.goBack();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível salvar os dados localmente.');
