@@ -36,10 +36,17 @@ export default function ListaPontosScreen({ navigation }) {
       />
 
       <TouchableOpacity 
-        style={[estilos.botao, { backgroundColor: '#1976d2', marginBottom: 15 }]}
+        style={[estilos.botao, { backgroundColor: '#1976d2', marginBottom: 10 }]}
         onPress={() => navigation.navigate('CadastroDoacao')}
       >
         <Text style={estilos.textoBotao}>Cadastrar Doação</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[estilos.botao, { backgroundColor: '#00897b', marginBottom: 15 }]}
+        onPress={() => navigation.navigate('HistoricoDoacoes')}
+      >
+        <Text style={estilos.textoBotao}>Ver Histórico de Doações</Text>
       </TouchableOpacity>
 
       <FlatList
