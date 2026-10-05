@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,22 +10,49 @@ import {
   Alert 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const CHAVE_ULTIMA_DOACAO = '@instituto_mao_amiga:ultima_doacao';
 
 export default function CadastroDoacaoScreen({ navigation }) {
   const [tipoItem, setTipoItem] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [destino, setDestino] = useState('');
 
-  const handleCadastrar = () => {
-    // Validação Regex exigida nas entregas anteriores
+  useEffect(() => {
+    carregarDoacaoSalva();
+  }, []);
+
+  const carregarDoacaoSalva = async () => {
+    try {
+      const dadosSalvos = await AsyncStorage.getItem(CHAVE_ULTIMA_DOACAO);
+      if (dadosSalvos !== null) {
+        const doacao = JSON.parse(dadosSalvos);
+        setTipoItem(doacao.tipoItem || '');
+        setQuantidade(doacao.quantidade || '');
+        setDestino(doacao.destino || '');
+      }
+    } catch (error) {
+      console.log('Erro ao carregar a doação salva:', error);
+    }
+  };
+
+  const handleCadastrar = async () => {
     const regexNumerico = /^[0-9]+$/;
     if (!regexNumerico.test(quantidade)) {
       Alert.alert('Erro', 'A quantidade deve conter apenas números válidos.');
       return;
     }
 
-    Alert.alert('Sucesso', 'Doação registada com sucesso!');
-    navigation.goBack();
+    const novaDoacao = { tipoItem, quantidade, destino };
+
+    try {
+      await AsyncStorage.setItem(CHAVE_ULTIMA_DOACAO, JSON.stringify(novaDoacao));
+      Alert.alert('Sucesso', 'Doação registada e salva com sucesso!');
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível salvar os dados localmente.');
+    }
   };
 
   return (
@@ -65,7 +92,6 @@ export default function CadastroDoacaoScreen({ navigation }) {
             onChangeText={setDestino}
           />
 
-          {/* Botão com altura mínima de 44px para atender ao critério WCAG 2.5.5 */}
           <TouchableOpacity style={styles.botao} onPress={handleCadastrar}>
             <Text style={styles.botaoTexto}>Confirmar Doação</Text>
           </TouchableOpacity>
@@ -113,7 +139,7 @@ const styles = StyleSheet.create({
   },
   botao: {
     backgroundColor: '#0066cc',
-    height: 48, // Atende ao critério de tamanho mínimo tátil
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
