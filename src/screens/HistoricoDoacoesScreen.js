@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -45,6 +45,28 @@ export default function HistoricoDoacoesScreen({ navigation }) {
     setDoacoes(dados);
   };
 
+  // Cálculo dos totais por tipo de item (ordenados do maior para o menor)
+  const resumoTotais = useMemo(() => {
+    const mapa = {};
+    doacoes.forEach((item) => {
+      const tipo = item.tipoItem.trim() || 'Outros';
+      const qtd = Number(item.quantidade) || 0;
+      if (!mapa[tipo]) {
+        mapa[tipo] = { totalQtd: 0, totalDoacoes: 0 };
+      }
+      mapa[tipo].totalQtd += qtd;
+      mapa[tipo].totalDoacoes += 1;
+    });
+
+    return Object.keys(mapa)
+      .map((tipo) => ({
+        tipoItem: tipo,
+        totalQtd: mapa[tipo].totalQtd,
+        totalDoacoes: mapa[tipo].totalDoacoes,
+      }))
+      .sort((a, b) => b.totalQtd - a.totalQtd);
+  }, [doacoes]);
+
   const doacoesFiltradas = doacoes.filter((item) =>
     item.tipoItem.toLowerCase().includes(busca.toLowerCase()) ||
     (item.pontoDestino && item.pontoDestino.toLowerCase().includes(busca.toLowerCase()))
@@ -53,6 +75,18 @@ export default function HistoricoDoacoesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.tituloHeader}>Histórico de Doações</Text>
+
+      {/* Bloco de Resumo com Totais */}
+      {resumoTotais.length > 0 && (
+        <View style={styles.resumoContainer}>
+          <Text style={styles.resumoTitulo}>Resumo por Tipo de Item</Text>
+          {resumoTotais.map((resumo, index) => (
+            <Text key={index} style={styles.resumoTexto}>
+              • <Text style={styles.bold}>{resumo.tipoItem}</Text>: {resumo.totalQtd} unidade(s) em {resumo.totalDoacoes} doação(ões)
+            </Text>
+          ))}
+        </View>
+      )}
 
       <TextInput
         style={styles.searchInput}
@@ -101,7 +135,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginVertical: 16,
+    marginVertical: 12,
+  },
+  resumoContainer: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#90caf9',
+  },
+  resumoTitulo: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#0d47a1',
+    marginBottom: 6,
+  },
+  resumoTexto: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 2,
   },
   searchInput: {
     backgroundColor: '#fff',
@@ -151,7 +205,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 30,
   },
   vazioTexto: {
     fontSize: 16,
