@@ -5,7 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ListaPontosScreen from './src/screens/ListaPontosScreen';
 import DetalhePontoScreen from './src/screens/DetalhePontoScreen';
 import CadastroDoacaoScreen from './src/screens/CadastroDoacaoScreen';
-import HistoricoDoacoesScreen from './src/screens/HistoricoDoacoesScreen'; // <-- Verifique se tem esta importação
+import HistoricoDoacoesScreen from './src/screens/HistoricoDoacoesScreen';
+import DetalheDoacaoScreen from './src/screens/DetalheDoacaoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +33,11 @@ export default function App() {
           name="HistoricoDoacoes" 
           component={HistoricoDoacoesScreen} 
           options={{ title: 'Minhas Doações' }}
+        />
+        <Stack.Screen 
+          name="DetalheDoacao" 
+          component={DetalheDoacaoScreen} 
+          options={{ title: 'Detalhes da Doação' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

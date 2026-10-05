@@ -33,3 +33,15 @@ export async function salvarDoacao(novaDoacao) {
     throw error;
   }
 }
+
+export async function excluirDoacao(id) {
+  try {
+    const doacoesAtuais = await listarDoacoes();
+    const novasDoacoes = doacoesAtuais.filter((item) => item.id !== id);
+    await AsyncStorage.setItem(CHAVE_DOACOES, JSON.stringify(novasDoacoes));
+    return novasDoacoes;
+  } catch (error) {
+    console.log('Erro ao excluir doação:', error);
+    throw error;
+  }
+}

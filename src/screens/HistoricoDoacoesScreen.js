@@ -10,8 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { listarDoacoes } from '../services/doacoesStorage';
 
-// Componente individual memorizado para cada item da lista (critério da issue)
-const ItemDoacao = React.memo(({ item }) => {
+const ItemDoacao = React.memo(({ item, onPress }) => {
   const dataFormatada = new Date(item.criadoEm).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -21,19 +20,18 @@ const ItemDoacao = React.memo(({ item }) => {
   });
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress}>
       <Text style={styles.cardTitulo}>{item.tipoItem}</Text>
       <Text style={styles.cardTexto}><Text style={styles.bold}>Quantidade:</Text> {item.quantidade}</Text>
       <Text style={styles.cardTexto}><Text style={styles.bold}>Destino:</Text> {item.pontoDestino || 'Não informado'}</Text>
       <Text style={styles.cardData}>Registado em: {dataFormatada}</Text>
-    </View>
+    </TouchableOpacity>
   );
 });
 
 export default function HistoricoDoacoesScreen({ navigation }) {
   const [doacoes, setDoacoes] = useState([]);
 
-  // Recarrega a lista sempre que o ecrã ganha foco
   useFocusEffect(
     useCallback(() => {
       carregarHistorico();
@@ -52,7 +50,12 @@ export default function HistoricoDoacoesScreen({ navigation }) {
       <FlatList
         data={doacoes}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ItemDoacao item={item} />}
+        renderItem={({ item }) => (
+          <ItemDoacao 
+            item={item} 
+            onPress={() => navigation.navigate('DetalheDoacao', { doacao: item })}
+          />
+        )}
         contentContainerStyle={styles.listaContainer}
         ListEmptyComponent={
           <View style={styles.vazioContainer}>
