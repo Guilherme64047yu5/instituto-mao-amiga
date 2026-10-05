@@ -45,3 +45,26 @@ export async function excluirDoacao(id) {
     throw error;
   }
 }
+
+export async function atualizarDoacao(idDoacao, dadosAtualizados) {
+  try {
+    const doacoesAtuais = await listarDoacoes();
+    const novasDoacoes = doacoesAtuais.map((item) => {
+      if (item.id === idDoacao) {
+        return {
+          ...item,
+          tipoItem: dadosAtualizados.tipoItem ?? item.tipoItem,
+          quantidade: dadosAtualizados.quantidade ?? item.quantidade,
+          pontoDestino: dadosAtualizados.pontoDestino ?? item.pontoDestino,
+        };
+      }
+      return item;
+    });
+
+    await AsyncStorage.setItem(CHAVE_DOACOES, JSON.stringify(novasDoacoes));
+    return novasDoacoes;
+  } catch (error) {
+    console.log('Erro ao atualizar doação:', error);
+    throw error;
+  }
+}
