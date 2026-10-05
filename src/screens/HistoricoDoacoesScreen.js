@@ -5,7 +5,8 @@ import {
   View, 
   FlatList, 
   TouchableOpacity, 
-  SafeAreaView 
+  SafeAreaView,
+  TextInput 
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { listarDoacoes } from '../services/doacoesStorage';
@@ -31,6 +32,7 @@ const ItemDoacao = React.memo(({ item, onPress }) => {
 
 export default function HistoricoDoacoesScreen({ navigation }) {
   const [doacoes, setDoacoes] = useState([]);
+  const [busca, setBusca] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -43,12 +45,24 @@ export default function HistoricoDoacoesScreen({ navigation }) {
     setDoacoes(dados);
   };
 
+  const doacoesFiltradas = doacoes.filter((item) =>
+    item.tipoItem.toLowerCase().includes(busca.toLowerCase()) ||
+    (item.pontoDestino && item.pontoDestino.toLowerCase().includes(busca.toLowerCase()))
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.tituloHeader}>Histórico de Doações</Text>
 
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Filtrar por item ou destino..."
+        value={busca}
+        onChangeText={setBusca}
+      />
+
       <FlatList
-        data={doacoes}
+        data={doacoesFiltradas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ItemDoacao 
@@ -59,13 +73,17 @@ export default function HistoricoDoacoesScreen({ navigation }) {
         contentContainerStyle={styles.listaContainer}
         ListEmptyComponent={
           <View style={styles.vazioContainer}>
-            <Text style={styles.vazioTexto}>Ainda não há doações registadas.</Text>
-            <TouchableOpacity 
-              style={styles.botaoVazio} 
-              onPress={() => navigation.navigate('CadastroDoacao')}
-            >
-              <Text style={styles.botaoVazioTexto}>Registar Primeira Doação</Text>
-            </TouchableOpacity>
+            <Text style={styles.vazioTexto}>
+              {doacoes.length === 0 ? 'Ainda não há doações registadas.' : 'Nenhuma doação encontrada.'}
+            </Text>
+            {doacoes.length === 0 && (
+              <TouchableOpacity 
+                style={styles.botaoVazio} 
+                onPress={() => navigation.navigate('CadastroDoacao')}
+              >
+                <Text style={styles.botaoVazioTexto}>Registar Primeira Doação</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
@@ -85,8 +103,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 16,
   },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    fontSize: 16,
+  },
   listaContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     flexGrow: 1,
   },
   card: {
@@ -122,12 +151,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 40,
   },
   vazioTexto: {
     fontSize: 16,
     color: '#666',
     marginBottom: 16,
+    textAlign: 'center',
   },
   botaoVazio: {
     backgroundColor: '#0066cc',
