@@ -7,6 +7,7 @@ import DetalhePontoScreen from './src/screens/DetalhePontoScreen';
 import CadastroPontoScreen from './src/screens/CadastroPontoScreen';
 import CadastroDoacaoScreen from './src/screens/CadastroDoacaoScreen';
 import HistoricoDoacoesScreen from './src/screens/HistoricoDoacoesScreen';
+import EditarDoacaoScreen from './src/screens/EditarDoacaoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +39,11 @@ export default function App() {
           name="HistoricoDoacoes"
           component={HistoricoDoacoesScreen}
           options={{ title: 'Histórico de Doações' }}
+        />
+        <Stack.Screen
+          name="EditarDoacao"
+          component={EditarDoacaoScreen}
+          options={{ title: 'Editar Doação' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

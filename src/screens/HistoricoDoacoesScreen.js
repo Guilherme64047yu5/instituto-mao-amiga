@@ -6,12 +6,16 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
   StyleSheet
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { listarDoacoes } from '../services/doacoesService';
+import {
+  listarDoacoes,
+  excluirDoacao
+} from '../services/doacoesService';
 
-export default function HistoricoDoacoesScreen() {
+export default function HistoricoDoacoesScreen({ navigation }) {
   const [filtro, setFiltro] = useState('');
   const [busca, setBusca] = useState('');
   const [doacoes, setDoacoes] = useState([]);
@@ -56,10 +60,8 @@ export default function HistoricoDoacoesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setPagina(0);
-      setTemMais(true);
       carregarDoacoes(filtro, 0, true);
-    }, [])
+    }, [filtro])
   );
 
   const pesquisar = () => {
@@ -73,6 +75,38 @@ export default function HistoricoDoacoesScreen() {
     if (!carregando && temMais && doacoes.length > 0) {
       carregarDoacoes(filtro, pagina + 1);
     }
+  };
+
+  const editar = (id) => {
+    navigation.navigate('EditarDoacao', { id });
+  };
+
+  const excluir = (id) => {
+    Alert.alert(
+      'Excluir doação',
+      'Tem certeza que deseja excluir esta doação?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await excluirDoacao(id);
+              setDoacoes((anteriores) =>
+                anteriores.filter((doacao) => doacao.id !== id)
+              );
+              Alert.alert('Sucesso', 'Doação excluída com sucesso!');
+            } catch (error) {
+              Alert.alert('Erro', error.message || 'Não foi possível excluir a doação.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const formatarData = (data) => {
@@ -109,6 +143,22 @@ export default function HistoricoDoacoesScreen() {
             <Text>Quantidade: {item.quantidade}</Text>
             <Text>Destino: {item.pontoDestino}</Text>
             <Text>Data: {formatarData(item.criadoEm)}</Text>
+
+            <View style={styles.acoes}>
+              <TouchableOpacity
+                style={styles.botaoEditar}
+                onPress={() => editar(item.id)}
+              >
+                <Text style={styles.textoAcao}>Editar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.botaoExcluir}
+                onPress={() => excluir(item.id)}
+              >
+                <Text style={styles.textoAcao}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         ListEmptyComponent={
@@ -172,6 +222,29 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: 'bold',
     marginBottom: 8,
+  },
+  acoes: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  botaoEditar: {
+    flex: 1,
+    backgroundColor: '#1976d2',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  botaoExcluir: {
+    flex: 1,
+    backgroundColor: '#d32f2f',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  textoAcao: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   erro: {
     color: 'red',
