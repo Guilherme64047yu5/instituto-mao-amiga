@@ -41,3 +41,7 @@ yarn-error.*
 /android
 
 /api/target/
+
+data/*.trace.db
+data/*.mv.db
+data/*.db
