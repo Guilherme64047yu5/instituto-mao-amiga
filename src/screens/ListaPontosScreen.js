@@ -1,33 +1,74 @@
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { pontosMock } from '../data/pontos';
 import { estilos } from '../styles/estilos';
+
+const API_URL = 'http://192.168.101.8:8080/api/v1/pontos/filtro';
 
 export default function ListaPontosScreen({ navigation }) {
   const [busca, setBusca] = useState('');
+  const [pontos, setPontos] = useState([]);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
-    async function carregarUltimaBusca() {
-      const salva = await AsyncStorage.getItem('@mao_amiga:ultima_busca');
-      if (salva) setBusca(salva);
+    async function iniciar() {
+      try {
+        const salva = await AsyncStorage.getItem('@mao_amiga:ultima_busca');
+        if (salva) {
+          setBusca(salva);
+          await buscarPontos(salva);
+        } else {
+          await buscarPontos('');
+        }
+      } catch (error) {
+        await buscarPontos('');
+      }
     }
-    carregarUltimaBusca();
+
+    iniciar();
   }, []);
+
+  async function buscarPontos(texto) {
+    setCarregando(true);
+    setErro('');
+
+    try {
+      const url = `${API_URL}?filtro=${encodeURIComponent(texto)}&page=0&size=50`;
+      const resposta = await fetch(url);
+
+      if (!resposta.ok) {
+        throw new Error('Erro ao buscar pontos');
+      }
+
+      const dados = await resposta.json();
+      setPontos(dados.content || []);
+    } catch (error) {
+      setErro('Não foi possível conectar à API.');
+      setPontos([]);
+    } finally {
+      setCarregando(false);
+    }
+  }
 
   const handleBuscaChange = async (texto) => {
     setBusca(texto);
     await AsyncStorage.setItem('@mao_amiga:ultima_busca', texto);
+    buscarPontos(texto);
   };
-
-  const pontosFiltrados = pontosMock.filter((p) =>
-    p.nome.toLowerCase().includes(busca.toLowerCase())
-  );
 
   return (
     <View style={estilos.container}>
       <Text style={estilos.titulo}>Pontos de Coleta</Text>
-      
+
       <TextInput
         style={estilos.input}
         placeholder="Pesquisar ponto..."
@@ -35,15 +76,19 @@ export default function ListaPontosScreen({ navigation }) {
         onChangeText={handleBuscaChange}
       />
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[estilos.botao, { backgroundColor: '#1976d2', marginBottom: 15 }]}
         onPress={() => navigation.navigate('CadastroDoacao')}
       >
         <Text style={estilos.textoBotao}>Cadastrar Doação</Text>
       </TouchableOpacity>
 
+      {carregando && <ActivityIndicator size="large" />}
+
+      {erro !== '' && <Text>{erro}</Text>}
+
       <FlatList
-        data={pontosFiltrados}
+        data={pontos}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -52,8 +97,14 @@ export default function ListaPontosScreen({ navigation }) {
           >
             <Text style={estilos.nomePonto}>{item.nome}</Text>
             <Text style={estilos.textoDetalhe}>{item.endereco}</Text>
+            <Text style={estilos.textoDetalhe}>{item.bairro}</Text>
           </TouchableOpacity>
         )}
+        ListEmptyComponent={
+          !carregando && erro === '' ? (
+            <Text>Nenhum ponto encontrado.</Text>
+          ) : null
+        }
       />
     </View>
   );
