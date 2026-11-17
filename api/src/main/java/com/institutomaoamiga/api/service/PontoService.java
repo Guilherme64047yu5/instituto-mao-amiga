@@ -1,9 +1,12 @@
-﻿package com.institutomaoamiga.api.service;
+﻿
+package com.institutomaoamiga.api.service;
 
 import com.institutomaoamiga.api.dto.PontoRequestDTO;
 import com.institutomaoamiga.api.dto.PontoResponseDTO;
 import com.institutomaoamiga.api.entity.Ponto;
 import com.institutomaoamiga.api.repository.PontoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,6 +28,18 @@ public class PontoService {
                 .stream()
                 .map(PontoResponseDTO::fromEntity)
                 .toList();
+    }
+
+    public Page<PontoResponseDTO> buscarPorFiltro(String filtro, Pageable pageable) {
+        Page<Ponto> pontos;
+
+        if (filtro == null || filtro.isBlank()) {
+            pontos = repository.findAll(pageable);
+        } else {
+            pontos = repository.buscarPorNomeOuBairro(filtro.trim(), pageable);
+        }
+
+        return pontos.map(PontoResponseDTO::fromEntity);
     }
 
     public PontoResponseDTO buscarPorId(UUID id) {
