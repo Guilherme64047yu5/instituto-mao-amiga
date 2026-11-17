@@ -1,17 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { estilos } from '../styles/estilos';
-
-const API_URL = 'http://192.168.101.8:8080/api/v1/pontos/filtro';
+import { listarPontos } from '../services/pontosService';
 
 export default function ListaPontosScreen({ navigation }) {
   const [busca, setBusca] = useState('');
@@ -20,50 +20,39 @@ export default function ListaPontosScreen({ navigation }) {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    async function iniciar() {
-      try {
-        const salva = await AsyncStorage.getItem('@mao_amiga:ultima_busca');
-        if (salva) {
-          setBusca(salva);
-          await buscarPontos(salva);
-        } else {
-          await buscarPontos('');
-        }
-      } catch (error) {
-        await buscarPontos('');
-      }
+    async function carregarUltimaBusca() {
+      const salva = await AsyncStorage.getItem('@mao_amiga:ultima_busca');
+      if (salva) setBusca(salva);
     }
 
-    iniciar();
+    carregarUltimaBusca();
   }, []);
 
-  async function buscarPontos(texto) {
+  const carregarPontos = useCallback(async () => {
     setCarregando(true);
     setErro('');
 
     try {
-      const url = `${API_URL}?filtro=${encodeURIComponent(texto)}&page=0&size=50`;
-      const resposta = await fetch(url);
-
-      if (!resposta.ok) {
-        throw new Error('Erro ao buscar pontos');
-      }
-
-      const dados = await resposta.json();
-      setPontos(dados.content || []);
+      const dados = await listarPontos(busca);
+      setPontos(dados?.content || []);
     } catch (error) {
-      setErro('Não foi possível conectar à API.');
+      setErro('Não foi possível carregar os pontos da API.');
       setPontos([]);
     } finally {
       setCarregando(false);
     }
-  }
+  }, [busca]);
 
-  const handleBuscaChange = async (texto) => {
+  useFocusEffect(
+    useCallback(() => {
+      carregarPontos();
+    }, [carregarPontos])
+  );
+
+  async function handleBuscaChange(texto) {
     setBusca(texto);
     await AsyncStorage.setItem('@mao_amiga:ultima_busca', texto);
-    buscarPontos(texto);
-  };
+  }
 
   return (
     <View style={estilos.container}>
@@ -75,6 +64,13 @@ export default function ListaPontosScreen({ navigation }) {
         value={busca}
         onChangeText={handleBuscaChange}
       />
+
+      <TouchableOpacity
+        style={[estilos.botao, { backgroundColor: '#2e7d32', marginBottom: 10 }]}
+        onPress={() => navigation.navigate('CadastroPonto')}
+      >
+        <Text style={estilos.textoBotao}>Cadastrar Ponto</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={[estilos.botao, { backgroundColor: '#1976d2', marginBottom: 15 }]}
@@ -89,7 +85,7 @@ export default function ListaPontosScreen({ navigation }) {
 
       <FlatList
         data={pontos}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={estilos.card}
