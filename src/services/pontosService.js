@@ -24,3 +24,6 @@ export function excluirPonto(id) {
     method: 'DELETE',
   });
 }
+export function buscarPontoPorId(id) {
+  return requisicao(`/pontos/${id}`);
+}

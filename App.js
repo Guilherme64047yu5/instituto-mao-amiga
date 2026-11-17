@@ -2,6 +2,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import MeusPontosScreen from './src/screens/MeusPontosScreen';
 import ListaPontosScreen from './src/screens/ListaPontosScreen';
 import DetalhePontoScreen from './src/screens/DetalhePontoScreen';
 import CadastroPontoScreen from './src/screens/CadastroPontoScreen';
@@ -20,26 +21,37 @@ export default function App() {
           component={ListaPontosScreen}
           options={{ title: 'Instituto Mão Amiga' }}
         />
+
+        <Stack.Screen
+          name="MeusPontos"
+          component={MeusPontosScreen}
+          options={{ title: 'Meus Pontos' }}
+        />
+
         <Stack.Screen
           name="DetalhePonto"
           component={DetalhePontoScreen}
           options={{ title: 'Detalhes do Ponto' }}
         />
+
         <Stack.Screen
           name="CadastroPonto"
           component={CadastroPontoScreen}
           options={{ title: 'Ponto de Coleta' }}
         />
+
         <Stack.Screen
           name="CadastroDoacao"
           component={CadastroDoacaoScreen}
           options={{ title: 'Nova Doação' }}
         />
+
         <Stack.Screen
           name="HistoricoDoacoes"
           component={HistoricoDoacoesScreen}
           options={{ title: 'Histórico de Doações' }}
         />
+
         <Stack.Screen
           name="EditarDoacao"
           component={EditarDoacaoScreen}
