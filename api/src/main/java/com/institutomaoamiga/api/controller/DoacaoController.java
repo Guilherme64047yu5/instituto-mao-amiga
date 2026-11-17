@@ -3,7 +3,7 @@
 import com.institutomaoamiga.api.dto.DoacaoRequestDTO;
 import com.institutomaoamiga.api.dto.DoacaoResponseDTO;
 import com.institutomaoamiga.api.entity.Doacao;
-import com.institutomaoamiga.api.repository.DoacaoRepository;
+import com.institutomaoamiga.api.service.DoacaoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,74 +11,51 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/doacoes")
+@RequestMapping("/api/v1/doacoes")
+@CrossOrigin(origins = "*")
 public class DoacaoController {
 
-    private final DoacaoRepository repository;
+    private final DoacaoService service;
 
-    public DoacaoController(DoacaoRepository repository) {
-        this.repository = repository;
+    public DoacaoController(DoacaoService service) {
+        this.service = service;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DoacaoResponseDTO criar(@Valid @RequestBody DoacaoRequestDTO dto) {
-        Doacao doacao = new Doacao();
-        doacao.setTipoItem(dto.getTipoItem());
-        doacao.setQuantidade(dto.getQuantidade());
-        doacao.setPontoDestino(dto.getPontoDestino());
-
-        return converter(repository.save(doacao));
+        return converter(service.cadastrar(dto));
     }
 
-    @GetMapping
+    @GetMapping("/filtro")
     public Page<DoacaoResponseDTO> listar(
-            @RequestParam(required = false) String tipoItem,
-            @PageableDefault(size = 10, sort = "criadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
+            @RequestParam(required = false) String filtro,
+            @PageableDefault(size = 10, sort = "criadoEm", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
-        Page<Doacao> doacoes;
-
-        if (tipoItem != null && !tipoItem.isBlank()) {
-            doacoes = repository.findByTipoItemContainingIgnoreCase(tipoItem, pageable);
-        } else {
-            doacoes = repository.findAll(pageable);
-        }
-
-        return doacoes.map(this::converter);
+        return service.listar(filtro, pageable).map(this::converter);
     }
 
     @GetMapping("/{id}")
     public DoacaoResponseDTO buscarPorId(@PathVariable UUID id) {
-        Doacao doacao = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doação não encontrada"));
-
-        return converter(doacao);
+        return converter(service.buscarPorId(id));
     }
 
     @PutMapping("/{id}")
-    public DoacaoResponseDTO atualizar(@PathVariable UUID id, @Valid @RequestBody DoacaoRequestDTO dto) {
-        Doacao doacao = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doação não encontrada"));
-
-        doacao.setTipoItem(dto.getTipoItem());
-        doacao.setQuantidade(dto.getQuantidade());
-        doacao.setPontoDestino(dto.getPontoDestino());
-
-        return converter(repository.save(doacao));
+    public DoacaoResponseDTO atualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody DoacaoRequestDTO dto) {
+        return converter(service.atualizar(id, dto));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable UUID id) {
-        Doacao doacao = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doação não encontrada"));
-
-        repository.delete(doacao);
+        service.excluir(id);
     }
 
     private DoacaoResponseDTO converter(Doacao doacao) {

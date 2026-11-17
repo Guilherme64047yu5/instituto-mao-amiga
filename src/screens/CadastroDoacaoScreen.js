@@ -1,68 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Alert 
+﻿import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const CHAVE_ULTIMA_DOACAO = '@instituto_mao_amiga:ultima_doacao';
+import { requisicao } from '../services/api';
+import { cadastrarDoacao } from '../services/doacoesService';
 
 export default function CadastroDoacaoScreen({ navigation }) {
   const [tipoItem, setTipoItem] = useState('');
   const [quantidade, setQuantidade] = useState('');
-  const [destino, setDestino] = useState('');
+  const [pontos, setPontos] = useState([]);
+  const [pontoSelecionado, setPontoSelecionado] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    carregarDoacaoSalva();
+    carregarPontos();
   }, []);
 
-  const carregarDoacaoSalva = async () => {
+  const carregarPontos = async () => {
     try {
-      const dadosSalvos = await AsyncStorage.getItem(CHAVE_ULTIMA_DOACAO);
-      if (dadosSalvos !== null) {
-        const doacao = JSON.parse(dadosSalvos);
-        setTipoItem(doacao.tipoItem || '');
-        setQuantidade(doacao.quantidade || '');
-        setDestino(doacao.destino || '');
-      }
+      const resposta = await requisicao('/pontos');
+      setPontos(Array.isArray(resposta) ? resposta : []);
     } catch (error) {
-      console.log('Erro ao carregar a doação salva:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os pontos de coleta.');
+    } finally {
+      setCarregando(false);
     }
   };
 
   const handleCadastrar = async () => {
-    const regexNumerico = /^[0-9]+$/;
-    if (!regexNumerico.test(quantidade)) {
-      Alert.alert('Erro', 'A quantidade deve conter apenas números válidos.');
+    if (!tipoItem.trim()) {
+      Alert.alert('Erro', 'Informe o tipo do item.');
       return;
     }
 
-    const novaDoacao = { tipoItem, quantidade, destino };
+    if (!/^[0-9]+$/.test(quantidade) || Number(quantidade) <= 0) {
+      Alert.alert('Erro', 'Informe uma quantidade válida maior que zero.');
+      return;
+    }
+
+    if (!pontoSelecionado) {
+      Alert.alert('Erro', 'Selecione um ponto de destino.');
+      return;
+    }
+
+    setSalvando(true);
 
     try {
-      await AsyncStorage.setItem(CHAVE_ULTIMA_DOACAO, JSON.stringify(novaDoacao));
-      Alert.alert('Sucesso', 'Doação registada e salva com sucesso!');
+      await cadastrarDoacao({
+        tipoItem: tipoItem.trim(),
+        quantidade: Number(quantidade),
+        pontoDestino: pontoSelecionado.nome
+      });
+
+      Alert.alert('Sucesso', 'Doação cadastrada com sucesso!');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar os dados localmente.');
+      Alert.alert('Erro', error.message || 'Não foi possível cadastrar a doação.');
+    } finally {
+      setSalvando(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={styles.titulo}>Registar Nova Doação</Text>
+          <Text style={styles.titulo}>Registrar Nova Doação</Text>
 
           <Text style={styles.label}>Tipo do Item:</Text>
           <TextInput
@@ -84,16 +100,35 @@ export default function CadastroDoacaoScreen({ navigation }) {
           />
 
           <Text style={styles.label}>Ponto de Destino:</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: Centro de Apoio"
-            placeholderTextColor="#888"
-            value={destino}
-            onChangeText={setDestino}
-          />
 
-          <TouchableOpacity style={styles.botao} onPress={handleCadastrar}>
-            <Text style={styles.botaoTexto}>Confirmar Doação</Text>
+          {carregando ? (
+            <ActivityIndicator size="large" color="#0066cc" />
+          ) : pontos.length === 0 ? (
+            <Text style={styles.aviso}>Nenhum ponto de coleta encontrado.</Text>
+          ) : (
+            pontos.map((ponto) => (
+              <TouchableOpacity
+                key={ponto.id}
+                style={[
+                  styles.ponto,
+                  pontoSelecionado?.id === ponto.id && styles.pontoSelecionado
+                ]}
+                onPress={() => setPontoSelecionado(ponto)}
+              >
+                <Text style={styles.textoPonto}>{ponto.nome}</Text>
+                <Text style={styles.endereco}>{ponto.endereco}</Text>
+              </TouchableOpacity>
+            ))
+          )}
+
+          <TouchableOpacity
+            style={styles.botao}
+            onPress={handleCadastrar}
+            disabled={salvando || carregando}
+          >
+            <Text style={styles.botaoTexto}>
+              {salvando ? 'Salvando...' : 'Confirmar Doação'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -112,7 +147,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 20,
     flexGrow: 1,
-    justifyContent: 'center',
   },
   titulo: {
     fontSize: 22,
@@ -136,6 +170,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     backgroundColor: '#fafafa',
+  },
+  ponto: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    backgroundColor: '#fafafa',
+  },
+  pontoSelecionado: {
+    borderColor: '#0066cc',
+    backgroundColor: '#e6f2ff',
+    borderWidth: 2,
+  },
+  textoPonto: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  endereco: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  aviso: {
+    color: '#666',
+    marginBottom: 16,
   },
   botao: {
     backgroundColor: '#0066cc',

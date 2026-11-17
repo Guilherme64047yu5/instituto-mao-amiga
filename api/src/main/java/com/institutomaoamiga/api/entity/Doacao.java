@@ -24,11 +24,6 @@ public class Doacao {
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
-    @PrePersist
-    public void prePersist() {
-        criadoEm = LocalDateTime.now();
-    }
-
     public UUID getId() {
         return id;
     }
@@ -59,5 +54,9 @@ public class Doacao {
 
     public LocalDateTime getCriadoEm() {
         return criadoEm;
+    }
+
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
     }
 }
